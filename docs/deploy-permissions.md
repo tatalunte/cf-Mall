@@ -32,6 +32,20 @@
 
 `go-live.mjs` 现已支持断点续跑：设 `D1_DATABASE_ID` / `KV_NAMESPACE_ID` 可直接复用已建资源，不依赖 `d1 list --json` 的输出格式；`DRY_RUN=1` 不再改写 `wrangler.toml`（以前会把全 0 假 ID 写进磁盘）。
 
+### CI 与网络结果
+
+- 首次 push 自动触发 run `42490906996`：`verify`（`npm ci` → `check -- --build` → `test:i18n`）与 `deploy`（占位符校验 → `wrangler deploy` → 健康检查）**两个 job 全 success**，健康检查日志为 `首页健康检查通过：https://cf-b2b-pro.talunte28.workers.dev`（HTTP 200）。
+- 本机代理**只放行 `api.github.com`**，对 `github.com` 返回 `CONNECT tunnel failed 502`、对 `*.workers.dev` 也不可达，因此 `git push` 与本地冒烟脚本都跑不通。代码改用 `scripts/push-via-api.mjs`（Git Data API：先 Contents API 激活空仓库 → 103 个 blob → tree → commit → 更新 `refs/heads/main`）写入，用法 `GITHUB_TOKEN=... node scripts/push-via-api.mjs`；站点可达性由 GitHub 云端 CI 验证。
+- Workers AI 模型已用 CF REST 实机调用成功（zh→en 返回译文，消耗约 1.09 Neurons），`wrangler dev --remote` 也确认 `env.AI` 绑定解析成功；但受本机网络限制，`/api/translate` 的**端到端**调用未实测 —— 在浏览器后台点一次 `Settings → Translation Engine → Test connection`，或编辑产品点「一键生成译文」即可完成最后一步验证。
+- 本地与远端是两条内容相同、commit SHA 不同的历史线（远端 `48eb450`）。换到能访问 `github.com` 的网络后，用 `git fetch origin && git reset --hard origin/main` 对齐即可；在此之前继续用 API 推送脚本。
+
+### 上线后待办（手动）
+
+1. **绑自定义域**：控制台 Workers & Pages → `cf-b2b-pro` → Settings → Domains & Routes → Add → Custom Domain → `xdl.de5.net`（CF 自动建 DNS 与证书）。`SITE_URL` 已填该域名，绑定后 canonical / sitemap / hreflang 立即生效；**未绑定前只能用 workers.dev 访问**。
+2. 补 `RESEND_API_KEY` / `TURNSTILE_*`（当前邮件不发出、人机验证不渲染 widget）。
+3. 给 `/admin*` 加 Cloudflare Access；轮换/删除临时 GitHub classic PAT；把 public 仓库按需改 private；删除误建的空仓库 `tatalunte/cf-b2b-pro`（当前 PAT 缺 `delete_repo`，网页删）。
+4. 妥善留存 `backups/deploy-*.json` 里的 `JWT_SECRET`（已 gitignore）。
+
 ---
 
 ## 1. Cloudflare API Token（路径 A / B 都要）
