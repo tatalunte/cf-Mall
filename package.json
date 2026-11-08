@@ -1,0 +1,47 @@
+{
+  "name": "cf-b2b-website",
+  "version": "1.0.0",
+  "description": "B2B foreign-trade website on Cloudflare Workers (D1 + R2 + KV + Queues)",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "wrangler dev --local",
+    "deploy": "wrangler deploy",
+    "check": "node scripts/check-all.mjs",
+    "test:i18n": "node scripts/test-i18n.mjs",
+    "test:ui": "node scripts/ui-test-multilang.mjs",
+    "test:content": "node scripts/ui-test-content.mjs",
+    "backup": "bash scripts/backup.sh",
+    "test:phase1c": "node scripts/ui-test-phase1c.mjs",
+    "test:phase2a": "node scripts/ui-test-phase2a.mjs",
+    "test:phase2b": "node scripts/ui-test-phase2b.mjs",
+    "test:phase2c": "node scripts/ui-test-phase2c.mjs",
+    "test:phase3": "node scripts/ui-test-phase3.mjs",
+    "test:phase3:api": "node scripts/test-phase3-api.mjs",
+    "test:pdf": "node scripts/test-pdf.mjs",
+    "test:all": "node scripts/test-i18n.mjs && node scripts/ui-test-multilang.mjs && node scripts/ui-test-content.mjs && node scripts/ui-test-phase1c.mjs && node scripts/ui-test-phase2a.mjs && node scripts/ui-test-phase2b.mjs && node scripts/ui-test-phase2c.mjs && node scripts/test-phase3-api.mjs && node scripts/ui-test-phase3.mjs && node scripts/test-translate.mjs && node scripts/ui-test-translate.mjs && node scripts/test-translation-config.mjs && node scripts/ui-test-translation-settings.mjs && node scripts/ui-audit.mjs",
+    "go-live": "node scripts/go-live.mjs",
+    "seed": "node scripts/seed-demo.mjs",
+    "audit": "node scripts/ui-audit.mjs",
+    "test:audit": "node scripts/ui-audit.mjs",
+    "seed:reset": "node scripts/seed-demo.mjs --reset",
+    "seed:prepare": "node scripts/seed-demo.mjs --prepare",
+    "test:theme": "node scripts/theme-smoke.mjs",
+    "theme:shots": "node scripts/theme-shots.mjs",
+    "test:translate": "node scripts/test-translate.mjs",
+    "ui:translate": "node scripts/ui-test-translate.mjs",
+    "test:engine": "node scripts/test-translation-config.mjs",
+    "ui:engine": "node scripts/ui-test-translation-settings.mjs"
+  },
+  "keywords": [
+    "cloudflare",
+    "workers",
+    "b2b",
+    "website"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "playwright-core": "^1.65.0",
+    "wrangler": "^4.53.0"
+  }
+}

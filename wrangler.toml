@@ -1,0 +1,77 @@
+# cf-b2b-pro —— 完整外贸站改造版
+# 部署前把 "REPLACE_*" 全部换成你自己账号里的 ID / 域名
+name = "cf-b2b-pro"
+main = "src/index.js"
+compatibility_date = "2026-01-01"
+
+[vars]
+ENVIRONMENT = "production"
+# 站点根地址（不带尾斜杠），用于 canonical / sitemap / hreflang / CORS
+SITE_URL = "https://xdl.de5.net"
+# 可选但强烈建议：R2 自定义域（在 R2 桶的 Settings → Public access → Custom domain 绑定）
+# 配上之后上传接口直接返回 https://img.yourdomain.com/products/xxx.png，
+# 图片流量不再经过 Worker：不占请求数、不受 10ms CPU 限制、延迟更低。
+# 留空则退回 /api/upload/image/... 的 Worker 代理模式。
+IMAGES_PUBLIC_BASE = ""
+# 设为 "1" 才会给产品图输出 srcset（/cdn-cgi/image/ 响应式变换）。
+# 前提：已在 Cloudflare 后台开通 Image Transformations。没开通就设 1，图会裂。
+IMAGE_RESIZE = "0"
+DEFAULT_LANG = "en"
+# 可用语言：英语 / 西语 / 阿语 / 简体中文 / 繁体中文
+# 加语言只需：i18n.js 加 DICT + LANG_META → 这里加 code → 种子数据可选加译文
+SUPPORTED_LANGS = "en,es,ar,zh,zh-TW"
+# Turnstile Sitekey 是公开的，可以放 vars；Secret 必须用 secret put
+TURNSTILE_SITEKEY = ""
+# 通知邮件收件人（销售邮箱）与发件地址（需在 Resend 验证过的域名）
+MAIL_TO = "admin@xdl.de5.net"
+MAIL_FROM = "B2B <notify@xdl.de5.net>"
+# 是否给客户回一封「已收到」确认信（true/false）。开启前确认话术符合当地法规
+AUTO_REPLY = "false"
+
+# 后台「一键生成译文」用的 Workers AI 绑定（@cf/meta/m2m100-1.2b）。
+# 零 API Key，免费额度 10,000 Neurons/天；模型 Zero data retention。
+# 注意：必须放在 [vars] 全部键之后 —— TOML 的 [table] 会结束上一个表，
+# 放中间会把后面的 TURNSTILE_SITEKEY / MAIL_TO 等误归到 [ai] 里。
+# 本地 wrangler dev --local 下 AI binding 显示 not supported（只有 zh→zh-TW 纯本地转换可用）；
+# 要跑真实模型请用 wrangler dev --remote（先 wrangler login）或部署到线上。
+[ai]
+binding = "AI"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "b2b_database"
+database_id = "d2f6c814-843d-48cc-bab0-2d30e7971193"
+
+[[r2_buckets]]
+binding = "IMAGES"
+bucket_name = "b2b-product-images"
+
+[[kv_namespaces]]
+binding = "STATIC_ASSETS"
+id = "81b26f3a185c4cee9a81cf0c8982db9d"
+
+# 询盘 → 异步发信（Workers Free 自 2026-02-04 起可用 Queues，1 万 ops/天 ≈ 3300 条/天）
+# 部署前先创建队列（DLQ 必须单独创建，否则 deploy 会报 queue not found）：
+#   wrangler queues create b2b-inquiry-mail
+#   wrangler queues create b2b-inquiry-mail-dlq
+[[queues.producers]]
+binding = "INQUIRY_QUEUE"
+queue = "b2b-inquiry-mail"
+
+[[queues.consumers]]
+queue = "b2b-inquiry-mail"
+max_batch_size = 10
+max_batch_timeout = 30
+max_retries = 3
+dead_letter_queue = "b2b-inquiry-mail-dlq"
+
+# Cron 兜底：每小时把 24h 内 mail_status='failed' 的询盘重新投递一次
+# 没有这段，src/index.js 里的 scheduled() 永远不会触发，「发信失败自动重试」等于没实现
+[triggers]
+crons = ["0 * * * *"]
+
+# 必须用 wrangler secret put 写入，切勿写进本文件：
+#   JWT_SECRET              随机 32+ 字节
+#   TURNSTILE_SECRET_KEY    Turnstile 密钥
+#   RESEND_API_KEY          Resend API Key
+#   TRANSLATION_SECRET_KEY  可选：独立加密后台自定义模型 API Key（不给则复用 JWT_SECRET）
