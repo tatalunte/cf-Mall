@@ -1,0 +1,16 @@
+node_modules/
+.wrangler/
+.claude/
+.dev.vars
+.deploy.env
+.env
+dist/
+dist-check/
+backups/
+test-artifacts/
+.demo-images.json
+*.log
+.DS_Store
+.idea/
+wrangler.toml.bak-*
+scripts/.tmp-*
